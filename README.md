@@ -20,7 +20,7 @@ From the directory where you want the project, run the executable (put it on
 .build/release/raylib init --lang [swift|csharp]
 ```
 
-The command creates a SwiftPM executable package or .NET 8 console project in the
+The command creates a SwiftPM executable package or .NET 10 console project in the
 current directory. Both languages start with the same raylib Hello World
 window. Use `--name` to choose its project name or `--path` to select another directory:
 
@@ -28,11 +28,16 @@ window. Use `--name` to choose its project name or `--path` to select another di
 raylib init --lang csharp --name MyGame --path ./MyGame
 ```
 
-Run a generated Swift project with `swift run`. It uses
+You can run generated projects directly with `swift run` or `dotnet run`, or
+use `raylib run` from the project directory. A Swift project uses
 [raylib-swift](https://github.com/tonytins/raylib-swift), which requires Swift
 6.0 or later and, on Linux, X11 and OpenGL development headers. Run a generated
-C# project with `dotnet run`; it uses [raylib-cs](https://github.com/raylib-cs/raylib-cs)
-from NuGet and requires the .NET 10 SDK or later.
+C# project with raylib-cs from [NuGet](https://github.com/raylib-cs/raylib-cs)
+and the .NET 10 SDK or later.
+
+`raylib run` detects the `Package.swift` or `.csproj` manifest in the current
+directory and invokes the matching toolchain. It reports an error if no
+supported manifest is found or if the directory contains multiple projects.
 
 ## License
 

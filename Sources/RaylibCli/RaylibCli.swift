@@ -12,7 +12,7 @@ struct RaylibCli: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "raylib",
         abstract: "Create and manage raylib projects.",
-        subcommands: [Init.self]
+        subcommands: [Init.self, Run.self]
     )
 }
 
@@ -39,6 +39,17 @@ struct Init: ParsableCommand {
 
         try ProjectGenerator.createProject(named: projectName, at: projectURL, language: lang)
         print("Created \(lang.rawValue) raylib project '\(projectName)' at \(projectURL.path)")
+    }
+}
+
+struct Run: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Build and run the raylib project in the current directory."
+    )
+
+    func run() throws {
+        let projectURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        try ProjectRunner.run(in: projectURL)
     }
 }
 

@@ -11,6 +11,56 @@ func targetNamesAreSwiftIdentifiers(input: String, expected: String) {
     #expect(ProjectGenerator.targetName(from: input) == expected)
 }
 
+@Test(arguments: [
+    ("Package.swift", ProjectLanguage.swift),
+    ("Game.csproj", ProjectLanguage.csharp),
+])
+func detectsProjectLanguage(from manifest: String, expected: ProjectLanguage) throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+    try "".write(
+        to: temporaryDirectory.appendingPathComponent(manifest),
+        atomically: true,
+        encoding: .utf8
+    )
+
+    #expect(try ProjectRunner.detectLanguage(in: temporaryDirectory) == expected)
+}
+
+@Test func reportsMissingProjectManifest() throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+
+    #expect(throws: ProjectRunnerError.self) {
+        try ProjectRunner.detectLanguage(in: temporaryDirectory)
+    }
+}
+
+@Test func reportsAmbiguousProjectManifests() throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+    try "".write(
+        to: temporaryDirectory.appendingPathComponent("Package.swift"),
+        atomically: true,
+        encoding: .utf8
+    )
+    try "".write(
+        to: temporaryDirectory.appendingPathComponent("Game.csproj"),
+        atomically: true,
+        encoding: .utf8
+    )
+
+    #expect(throws: ProjectRunnerError.self) {
+        try ProjectRunner.detectLanguage(in: temporaryDirectory)
+    }
+}
+
 @Test func createsSwiftPackageWithRaylibDependency() throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString)
