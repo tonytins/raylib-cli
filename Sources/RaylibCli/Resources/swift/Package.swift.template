@@ -14,5 +14,6 @@ let package = Package(
                 .product(name: "Raylib", package: "raylib-swift"),
             ]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )
