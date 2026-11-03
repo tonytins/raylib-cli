@@ -17,7 +17,11 @@ enum ProjectGenerator {
         return name.isEmpty ? "Game" : name
     }
 
-    static func createProject(named name: String, at projectURL: URL, language: ProjectLanguage) throws {
+    static func createProject(
+        named name: String,
+        at projectURL: URL,
+        language: ProjectLanguage
+    ) throws {
         let fileManager = FileManager.default
         var isDirectory = false
 
@@ -25,7 +29,7 @@ enum ProjectGenerator {
             throw ProjectError.destinationIsNotDirectory(projectURL.path)
         }
 
-        let projectFiles = generatedFiles(named: name, at: projectURL, language: language)
+        let projectFiles = try generatedFiles(named: name, at: projectURL, language: language)
 
         for file in projectFiles where fileManager.fileExists(atPath: file.url.path) {
             throw ProjectError.fileAlreadyExists(file.url.path)
@@ -44,7 +48,7 @@ enum ProjectGenerator {
         named name: String,
         at projectURL: URL,
         language: ProjectLanguage
-    ) -> [(url: URL, contents: String)] {
+    ) throws -> [(url: URL, contents: String)] {
         switch language {
         case .swift:
             let sourceDirectoryURL = projectURL
@@ -53,106 +57,62 @@ enum ProjectGenerator {
             return [
                 (
                     projectURL.appendingPathComponent("Package.swift"),
-                    swiftPackageManifest(for: name)
+                    try template(named: "Package.swift.template", language: language)
+                        .replacingOccurrences(of: "{{PROJECT_NAME}}", with: name)
                 ),
                 (
                     sourceDirectoryURL.appendingPathComponent("main.swift"),
-                    swiftSourceFile
+                    try template(named: "main.swift", language: language)
+                ),
+                (
+                    projectURL.appendingPathComponent(".gitignore"),
+                    try template(named: "swift-gitignore", language: language)
                 ),
             ]
         case .csharp:
             return [
                 (
                     projectURL.appendingPathComponent("\(name).csproj"),
-                    csharpProjectFile
+                    try template(named: "project.csproj", language: language)
                 ),
                 (
                     projectURL.appendingPathComponent("Program.cs"),
-                    csharpSourceFile
+                    try template(named: "Program.cs", language: language)
                 ),
                 (
                     projectURL.appendingPathComponent("GlobalUsings.cs"),
-                    csharpGlobalSourceFile
-                )
-            ]
-        }
-    }
-
-    private static func swiftPackageManifest(for name: String) -> String {
-        """
-        // swift-tools-version: 6.0
-
-        import PackageDescription
-
-        let package = Package(
-            name: "\(name)",
-            dependencies: [
-                .package(url: "https://github.com/tonytins/raylib-swift", branch: "main"),
-            ],
-            targets: [
-                .executableTarget(
-                    name: "\(name)",
-                    dependencies: [
-                        .product(name: "Raylib", package: "raylib-swift"),
-                    ]
+                    try template(named: "GlobalUsings.cs", language: language)
+                ),
+                (
+                    projectURL.appendingPathComponent(".gitignore"),
+                    try template(named: "dotnet-gitignore", language: language)
                 ),
             ]
-        )
-        """
+        }
     }
 
-    private static let swiftSourceFile = """
-        import Raylib
-
-        InitWindow(800, 480, "Hello, World")
-
-        while !WindowShouldClose() {
-            BeginDrawing()
-            ClearBackground(.white)
-            DrawText("Hello, world!", 12, 12, 20, .black)
-            EndDrawing()
+    private static func template(named name: String, language: ProjectLanguage) throws -> String {
+        guard let languageDirectoryURL = Bundle.module.url(
+            forResource: language.rawValue,
+            withExtension: nil,
+            subdirectory: "Resources"
+        ) else {
+            throw ProjectError.templateNotFound(name, language.rawValue)
         }
 
-        CloseWindow()
-        """
-
-    private static let csharpProjectFile = """
-        <Project Sdk="Microsoft.NET.Sdk">
-          <PropertyGroup>
-            <OutputType>Exe</OutputType>
-            <TargetFramework>net10.0</TargetFramework>
-            <ImplicitUsings>enable</ImplicitUsings>
-            <Nullable>enable</Nullable>
-          </PropertyGroup>
-          <ItemGroup>
-            <PackageReference Include="Raylib-cs" Version="8.1.0" />
-          </ItemGroup>
-        </Project>
-        """
-
-    private static let csharpGlobalSourceFile = """
-        global using Raylib_cs;
-        """
-
-    private static let csharpSourceFile = """
-        Raylib.InitWindow(800, 480, "Hello, World");
-
-        while (!Raylib.WindowShouldClose())
-        {
-            Raylib.BeginDrawing();
-            Raylib.ClearBackground(Color.White);
-            Raylib.DrawText("Hello, world!", 12, 12, 20, Color.Black);
-            Raylib.EndDrawing();
+        let resourceURL = languageDirectoryURL.appendingPathComponent(name)
+        guard FileManager.default.fileExists(atPath: resourceURL.path) else {
+            throw ProjectError.templateNotFound(name, language.rawValue)
         }
 
-        Raylib.CloseWindow();
-        """
-
+        return try String(contentsOf: resourceURL, encoding: .utf8)
+    }
 }
 
 enum ProjectError: LocalizedError {
     case destinationIsNotDirectory(String)
     case fileAlreadyExists(String)
+    case templateNotFound(String, String)
 
     var errorDescription: String? {
         switch self {
@@ -160,6 +120,8 @@ enum ProjectError: LocalizedError {
             return "The destination is not a directory: \(path)"
         case .fileAlreadyExists(let path):
             return "Refusing to overwrite existing file: \(path)"
+        case .templateNotFound(let name, let language):
+            return "Missing \(language) project template: \(name)"
         }
     }
 }

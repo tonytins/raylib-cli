@@ -28,6 +28,9 @@ window. Use `--name` to choose its project name or `--path` to select another di
 raylib init --lang csharp --name MyGame --path ./MyGame
 ```
 
+The starter files and language-specific `.gitignore` templates are in
+`Sources/RaylibCli/Resources`.
+
 You can run generated projects directly with `swift run` or `dotnet run`, or
 use `raylib run` from the project directory. A Swift project uses
 [raylib-swift](https://github.com/tonytins/raylib-swift), which requires Swift

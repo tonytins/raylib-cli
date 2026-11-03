@@ -18,6 +18,9 @@ let package = Package(
             name: "RaylibCli",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            resources: [
+                .copy("Resources"),
             ]
         ),
         .testTarget(

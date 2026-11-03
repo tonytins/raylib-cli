@@ -80,6 +80,10 @@ func detectsProjectLanguage(from manifest: String, expected: ProjectLanguage) th
         contentsOf: temporaryDirectory.appendingPathComponent("Sources/TestGame/main.swift"),
         encoding: .utf8
     )
+    let gitignore = try String(
+        contentsOf: temporaryDirectory.appendingPathComponent(".gitignore"),
+        encoding: .utf8
+    )
 
     #expect(manifest.contains("https://github.com/tonytins/raylib-swift"))
     #expect(manifest.contains(".product(name: \"Raylib\", package: \"raylib-swift\")"))
@@ -88,6 +92,7 @@ func detectsProjectLanguage(from manifest: String, expected: ProjectLanguage) th
     #expect(source.contains("InitWindow(800, 480, \"Hello, World\")"))
     #expect(source.contains("ClearBackground(.white)"))
     #expect(source.contains("DrawText(\"Hello, world!\", 12, 12, 20, .black)"))
+    #expect(gitignore.contains("/.build"))
 }
 
 @Test func createsCSharpProjectWithRaylibPackage() throws {
@@ -109,6 +114,10 @@ func detectsProjectLanguage(from manifest: String, expected: ProjectLanguage) th
         contentsOf: temporaryDirectory.appendingPathComponent("Program.cs"),
         encoding: .utf8
     )
+    let gitignore = try String(
+        contentsOf: temporaryDirectory.appendingPathComponent(".gitignore"),
+        encoding: .utf8
+    )
 
     #expect(project.contains("<TargetFramework>net10.0</TargetFramework>"))
     #expect(project.contains("<PackageReference Include=\"Raylib-cs\" Version=\"8.1.0\" />"))
@@ -116,6 +125,7 @@ func detectsProjectLanguage(from manifest: String, expected: ProjectLanguage) th
     #expect(source.contains("Raylib.InitWindow(800, 480, \"Hello, World\")"))
     #expect(source.contains("Raylib.DrawText(\"Hello, world!\", 12, 12, 20, Color.Black)"))
     #expect(source.contains("Raylib.ClearBackground(Color.White)"))
+    #expect(gitignore.contains("[Bb]in/"))
 }
 
 @Test func refusesToOverwriteExistingManifest() throws {

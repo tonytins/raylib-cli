@@ -1,0 +1,18 @@
+// swift-tools-version: 6.0
+
+import PackageDescription
+
+let package = Package(
+    name: "{{PROJECT_NAME}}",
+    dependencies: [
+        .package(url: "https://github.com/tonytins/raylib-swift", branch: "main"),
+    ],
+    targets: [
+        .executableTarget(
+            name: "{{PROJECT_NAME}}",
+            dependencies: [
+                .product(name: "Raylib", package: "raylib-swift"),
+            ]
+        ),
+    ]
+)
