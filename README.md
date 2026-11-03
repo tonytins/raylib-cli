@@ -2,7 +2,7 @@
 
 A command-line tool for creating raylib projects.
 
-## Create a Swift project
+## Create a project
 
 Build the CLI with SwiftPM:
 
@@ -17,19 +17,22 @@ From the directory where you want the project, run the executable (put it on
 `PATH` to use the shorter `raylib` command):
 
 ```sh
-.build/release/raylib init --lang swift
+.build/release/raylib init --lang [swift|csharp]
 ```
 
-The command creates a SwiftPM executable package in the current directory. Use
-`--name` to choose its Swift target name or `--path` to select another directory:
+The command creates a SwiftPM executable package or .NET 8 console project in the
+current directory. Both languages start with the same raylib Hello World
+window. Use `--name` to choose its project name or `--path` to select another directory:
 
 ```sh
-raylib init --lang swift --name MyGame --path ./MyGame
+raylib init --lang csharp --name MyGame --path ./MyGame
 ```
 
-Run the generated project with `swift run`. It uses
+Run a generated Swift project with `swift run`. It uses
 [raylib-swift](https://github.com/tonytins/raylib-swift), which requires Swift
-6.0 or later and, on Linux, X11 and OpenGL development headers.
+6.0 or later and, on Linux, X11 and OpenGL development headers. Run a generated
+C# project with `dotnet run`; it uses [raylib-cs](https://github.com/raylib-cs/raylib-cs)
+from NuGet and requires the .NET 10 SDK or later.
 
 ## License
 

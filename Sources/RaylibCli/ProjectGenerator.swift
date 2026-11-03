@@ -17,33 +17,68 @@ enum ProjectGenerator {
         return name.isEmpty ? "Game" : name
     }
 
-    static func createProject(named name: String, at projectURL: URL) throws {
+    static func createProject(named name: String, at projectURL: URL, language: ProjectLanguage) throws {
         let fileManager = FileManager.default
-        var isDirectory = ObjCBool(false)
+        var isDirectory = false
 
-        if fileManager.fileExists(atPath: projectURL.path, isDirectory: &isDirectory), !isDirectory.boolValue {
+        if fileManager.fileExists(atPath: projectURL.path, isDirectory: &isDirectory), !isDirectory {
             throw ProjectError.destinationIsNotDirectory(projectURL.path)
         }
 
-        let packageURL = projectURL.appendingPathComponent("Package.swift")
-        let sourceDirectoryURL = projectURL
-            .appendingPathComponent("Sources")
-            .appendingPathComponent(name)
-        let sourceURL = sourceDirectoryURL.appendingPathComponent("main.swift")
+        let projectFiles = generatedFiles(named: name, at: projectURL, language: language)
 
-        guard !fileManager.fileExists(atPath: packageURL.path) else {
-            throw ProjectError.fileAlreadyExists(packageURL.path)
-        }
-        guard !fileManager.fileExists(atPath: sourceURL.path) else {
-            throw ProjectError.fileAlreadyExists(sourceURL.path)
+        for file in projectFiles where fileManager.fileExists(atPath: file.url.path) {
+            throw ProjectError.fileAlreadyExists(file.url.path)
         }
 
-        try fileManager.createDirectory(at: sourceDirectoryURL, withIntermediateDirectories: true)
-        try packageManifest(for: name).write(to: packageURL, atomically: true, encoding: .utf8)
-        try sourceFile(for: name).write(to: sourceURL, atomically: true, encoding: .utf8)
+        for file in projectFiles {
+            try fileManager.createDirectory(
+                at: file.url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try file.contents.write(to: file.url, atomically: true, encoding: .utf8)
+        }
     }
 
-    private static func packageManifest(for name: String) -> String {
+    private static func generatedFiles(
+        named name: String,
+        at projectURL: URL,
+        language: ProjectLanguage
+    ) -> [(url: URL, contents: String)] {
+        switch language {
+        case .swift:
+            let sourceDirectoryURL = projectURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent(name)
+            return [
+                (
+                    projectURL.appendingPathComponent("Package.swift"),
+                    swiftPackageManifest(for: name)
+                ),
+                (
+                    sourceDirectoryURL.appendingPathComponent("main.swift"),
+                    swiftSourceFile
+                ),
+            ]
+        case .csharp:
+            return [
+                (
+                    projectURL.appendingPathComponent("\(name).csproj"),
+                    csharpProjectFile
+                ),
+                (
+                    projectURL.appendingPathComponent("Program.cs"),
+                    csharpSourceFile
+                ),
+                (
+                    projectURL.appendingPathComponent("GlobalUsings.cs"),
+                    csharpGlobalSourceFile
+                )
+            ]
+        }
+    }
+
+    private static func swiftPackageManifest(for name: String) -> String {
         """
         // swift-tools-version: 6.0
 
@@ -66,24 +101,53 @@ enum ProjectGenerator {
         """
     }
 
-    private static func sourceFile(for name: String) -> String {
-        """
+    private static let swiftSourceFile = """
         import Raylib
 
-        SetConfigFlags([.vsyncHint, .windowResizable])
-        InitWindow(800, 450, "\(name)")
-        SetTargetFPS(60)
+        InitWindow(800, 480, "Hello, World")
 
         while !WindowShouldClose() {
             BeginDrawing()
-            ClearBackground(.rayWhite)
-            DrawText("Congrats! You created your first raylib game!", 120, 200, 20, .lightGray)
+            ClearBackground(.white)
+            DrawText("Hello, world!", 12, 12, 20, .black)
             EndDrawing()
         }
 
         CloseWindow()
         """
-    }
+
+    private static let csharpProjectFile = """
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <OutputType>Exe</OutputType>
+            <TargetFramework>net10.0</TargetFramework>
+            <ImplicitUsings>enable</ImplicitUsings>
+            <Nullable>enable</Nullable>
+          </PropertyGroup>
+          <ItemGroup>
+            <PackageReference Include="Raylib-cs" Version="8.1.0" />
+          </ItemGroup>
+        </Project>
+        """
+
+    private static let csharpGlobalSourceFile = """
+        global using Raylib_cs;
+        """
+
+    private static let csharpSourceFile = """
+        Raylib.InitWindow(800, 480, "Hello, World");
+
+        while (!Raylib.WindowShouldClose())
+        {
+            Raylib.BeginDrawing();
+            Raylib.ClearBackground(Color.White);
+            Raylib.DrawText("Hello, world!", 12, 12, 20, Color.Black);
+            Raylib.EndDrawing();
+        }
+
+        Raylib.CloseWindow();
+        """
+
 }
 
 enum ProjectError: LocalizedError {

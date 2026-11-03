@@ -31,21 +31,18 @@ struct Init: ParsableCommand {
     var path = "."
 
     func run() throws {
-        guard lang == .swift else {
-            throw ValidationError("Unsupported language: \(lang.rawValue)")
-        }
-
         let projectURL = URL(fileURLWithPath: path, relativeTo: URL(fileURLWithPath: FileManager.default.currentDirectoryPath))
             .standardizedFileURL
         let projectName = ProjectGenerator.targetName(
             from: name ?? projectURL.lastPathComponent
         )
 
-        try ProjectGenerator.createProject(named: projectName, at: projectURL)
-        print("Created Swift raylib project '\(projectName)' at \(projectURL.path)")
+        try ProjectGenerator.createProject(named: projectName, at: projectURL, language: lang)
+        print("Created \(lang.rawValue) raylib project '\(projectName)' at \(projectURL.path)")
     }
 }
 
 enum ProjectLanguage: String, ExpressibleByArgument {
     case swift
+    case csharp
 }
